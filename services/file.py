@@ -7,6 +7,8 @@ from PyPDF2 import PdfReader
 import docx2txt
 import csv
 import pptx
+import tempfile
+import os
 
 from models.models import Document, DocumentMetadata, Source
 
@@ -86,22 +88,19 @@ def extract_text_from_file(file: BufferedReader, mimetype: str) -> str:
 
 
 # Extract text from a file based on its mimetype
-async def extract_text_from_form_file(file: UploadFile):
-    """Return the text content of a file."""
-    # get the file body from the upload file object
+async def extract_text_from_form_file(file):
+    # create a temporary directory to store the uploaded file
+    temp_dir = tempfile.mkdtemp()
+    temp_file_path = os.path.join(temp_dir, file.filename)
     mimetype = file.content_type
     print(f"mimetype: {mimetype}")
     print(f"file.file: {file.file}")
-    print("file: ", file)
-
-    file_stream = await file.read()
-
-    temp_file_path = "/tmp/temp_file"
-
+    print("file: ", file)   
     # write the file to a temporary location
     with open(temp_file_path, "wb") as f:
-        f.write(file_stream)
+        f.write(await file.read())
 
+    # extract the text from the file
     try:
         extracted_text = extract_text_from_filepath(temp_file_path, mimetype)
     except Exception as e:
