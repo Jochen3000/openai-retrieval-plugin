@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 import asyncio
-
+from dotenv import load_dotenv
+import os
 from models.models import (
     Document,
     DocumentChunk,
@@ -13,6 +14,14 @@ from models.models import (
 from services.chunks import get_document_chunks
 from services.openai import get_embeddings
 
+load_dotenv()
+
+datastore = os.getenv("DATASTORE")
+bearer_token = os.getenv("BEARER_TOKEN")
+openai_api_key = os.getenv("OPENAI_API_KEY")
+pinecone_api_key = os.getenv("PINECONE_API_KEY")
+pinecone_environment = os.getenv("PINECONE_ENVIRONMENT")
+pinecone_index = os.getenv("PINECONE_INDEX")
 
 class DataStore(ABC):
     async def upsert(
@@ -84,3 +93,7 @@ class DataStore(ABC):
         Returns whether the operation was successful.
         """
         raise NotImplementedError
+
+async def get_datastore() -> DataStore:
+    from datastore.providers.pinecone_datastore import PineconeDataStore
+    return PineconeDataStore()
