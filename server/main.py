@@ -12,14 +12,17 @@ from models.api import (
 )
 from datastore.datastore import get_datastore
 from services.file import get_document_from_file
-from .routers import query_router  # New import
+
+from .query_router import query_router  
+from .prompt_router import prompt_router
 
 app = FastAPI()
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
 
 app.include_router(query_router, prefix="/sub") 
+app.include_router(prompt_router)
 
-# Create a sub-application, in order to access just the query endpoints in the OpenAPI schema, found at http://0.0.0.0:8000/sub/openapi.json when the app is running locally
+# Create a sub-application, in order to access just the query endpoints
 sub_app = FastAPI(
     title="Retrieval Plugin API",
     description="A retrieval API for querying and filtering documents based on natural language queries and metadata",
