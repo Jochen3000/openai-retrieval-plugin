@@ -1,6 +1,9 @@
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, Body, UploadFile
+import os
+from fastapi import FastAPI, File, HTTPException, Body, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
+from pymongo import MongoClient
+import certifi
 
 from models.api import (
     DeleteRequest,
@@ -15,6 +18,13 @@ from services.file import get_document_from_file
 
 from .query_router import query_router  
 from .prompt_router import prompt_router
+
+# Connect to mongodb
+connection_string = os.getenv('MONGO_DB_URL')
+db_client = MongoClient(connection_string, tlsCAFile=certifi.where())
+db = db_client['podojodoku']
+vectorindex_collection = db['vectorindex']
+metadata_collection = db['metadata']
 
 app = FastAPI()
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
@@ -38,15 +48,18 @@ app.mount("/sub", sub_app)
 )
 async def upsert_file(
     file: UploadFile = File(...),
+    document_id: str = Form(...),
 ):
-    document = await get_document_from_file(file)
+    document = await get_document_from_file(file, document_id)
 
     try:
         ids = await datastore.upsert([document])
+        await upsert_metadata(document)
         return UpsertResponse(ids=ids)
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail=f"str({e})")
+
 
 
 @app.post(
@@ -62,6 +75,14 @@ async def upsert(
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail="Internal Service Error")
+
+async def upsert_metadata(document):
+    metadata = {
+        "id": document.id,
+    }
+
+    result = metadata_collection.replace_one({"id": document.id}, metadata, upsert=True)
+    return result
 
 
 @app.post(
