@@ -60,8 +60,6 @@ async def upsert_file(
         print("Error:", e)
         raise HTTPException(status_code=500, detail=f"str({e})")
 
-
-
 @app.post(
     "/upsert",
     response_model=UpsertResponse,
@@ -138,11 +136,23 @@ async def delete(
             filter=request.filter,
             delete_all=request.delete_all,
         )
+
+        if request.ids:
+            for document_id in request.ids:
+                await delete_metadata(document_id)
+        elif request.filter and request.filter.document_id:
+            await delete_metadata(request.filter.document_id)
+
         return DeleteResponse(success=success)
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail="Internal Service Error")
 
+
+
+async def delete_metadata(document_id: str):
+    result = metadata_collection.delete_one({"id": document_id})
+    return result.deleted_count > 0
 
 @app.on_event("startup")
 async def startup():
