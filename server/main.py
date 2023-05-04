@@ -2,6 +2,7 @@ import uvicorn
 import os
 from fastapi import FastAPI, File, HTTPException, Body, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 import certifi
 
@@ -28,6 +29,19 @@ metadata_collection = db['metadata']
 
 app = FastAPI()
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
+
+#cors
+origins = [
+    "http://localhost:5173",  # Update this to the URL of your React app
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(query_router, prefix="/sub") 
 app.include_router(prompt_router)

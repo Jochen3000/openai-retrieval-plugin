@@ -8,7 +8,7 @@ packages = [{include = "server"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-fastapi = "^0.92.0"
+fastapi = { version = "^0.92.0", extras = ["all"] } 
 uvicorn = "^0.20.0"
 openai = "^0.27.2"
 python-dotenv = "^0.21.1"
