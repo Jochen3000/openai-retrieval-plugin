@@ -23,7 +23,7 @@ from .prompt_router import prompt_router
 # Connect to mongodb
 connection_string = os.getenv('MONGO_DB_URL')
 db_client = MongoClient(connection_string, tlsCAFile=certifi.where())
-db = db_client['podojodoku']
+db = db_client['userresearch']
 vectorindex_collection = db['vectorindex']
 metadata_collection = db['metadata']
 
