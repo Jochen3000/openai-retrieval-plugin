@@ -63,16 +63,20 @@ app.mount("/sub", sub_app)
 async def upsert_file(
     file: UploadFile = File(...),
     document_id: str = Form(...),
+    author: str = Form(None),  # Add author parameter and set default to None
+    timestamp: str = Form(None),  # Add timestamp parameter and set default to None
+    source: str = Form(None),  # Add source parameter and set default to None
 ):
     document = await get_document_from_file(file, document_id)
 
     try:
         ids = await datastore.upsert([document])
-        await upsert_metadata(document)
+        await upsert_metadata(document, author, timestamp, source)  # Pass the additional values
         return UpsertResponse(ids=ids)
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail=f"str({e})")
+
 
 @app.post(
     "/upsert",
@@ -88,9 +92,12 @@ async def upsert(
         print("Error:", e)
         raise HTTPException(status_code=500, detail="Internal Service Error")
 
-async def upsert_metadata(document):
+async def upsert_metadata(document, author, timestamp, source):  # Receive the additional values
     metadata = {
         "id": document.id,
+        "author": author,  # Add author to metadata
+        "timestamp": timestamp,  # Add timestamp to metadata
+        "source": source,  # Add source to metadata
     }
 
     result = metadata_collection.replace_one({"id": document.id}, metadata, upsert=True)
