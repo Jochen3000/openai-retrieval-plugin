@@ -31,8 +31,9 @@ app = FastAPI()
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
 
 #cors
+cors_origins_str = os.getenv('CORS_ORIGINS')
 origins = [
-    "http://localhost:5173",  # Update this to the URL of your React app
+    cors_origins_str,  
 ]
 
 app.add_middleware(
@@ -51,7 +52,7 @@ sub_app = FastAPI(
     title="Retrieval Plugin API",
     description="A retrieval API for querying and filtering documents based on natural language queries and metadata",
     version="1.0.0",
-    servers=[{"url": "https://your-app-url.com"}],
+    servers=[{"url": "https://openai-retrieval-plugin.onrender.com"}],
 )
 app.mount("/sub", sub_app)
 
