@@ -7,6 +7,7 @@ class Source(str, Enum):
     email = "email"
     file = "file"
     chat = "chat"
+    userresearch_db = "userresearch_db"
 
 
 class DocumentMetadata(BaseModel):

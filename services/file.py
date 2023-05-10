@@ -13,10 +13,10 @@ import os
 from models.models import Document, DocumentMetadata, Source
 
 
-async def get_document_from_file(file: UploadFile, document_id: str) -> Document:
+async def get_document_from_file(file: UploadFile, document_id: str, source: Source) -> Document:
     extracted_text = await extract_text_from_form_file(file)
     metadata = DocumentMetadata(
-        source=Source.file,
+        source=source,
     )
     doc = Document(id=document_id, text=extracted_text, metadata=metadata)
 

@@ -68,7 +68,7 @@ async def upsert_file(
     timestamp: str = Form(None),  # Add timestamp parameter and set default to None
     source: str = Form(None),  # Add source parameter and set default to None
 ):
-    document = await get_document_from_file(file, document_id)
+    document = await get_document_from_file(file, document_id, source)
 
     try:
         ids = await datastore.upsert([document])
