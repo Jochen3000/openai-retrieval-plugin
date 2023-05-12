@@ -56,7 +56,7 @@ sub_app = FastAPI(
 )
 app.mount("/sub", sub_app)
 
-
+# upload document
 @app.post(
     "/upsert-file",
     response_model=UpsertResponse,
@@ -64,11 +64,12 @@ app.mount("/sub", sub_app)
 async def upsert_file(
     file: UploadFile = File(...),
     document_id: str = Form(...),
-    author: str = Form(None),  # Add author parameter and set default to None
-    timestamp: str = Form(None),  # Add timestamp parameter and set default to None
-    source: str = Form(None),  # Add source parameter and set default to None
+    author: str = Form(None),
+    timestamp: str = Form(None), 
+    source: str = Form(None), 
+    source_id: str = Form(None),  
 ):
-    document = await get_document_from_file(file, document_id, source)
+    document = await get_document_from_file(file, document_id, source, author, source_id)
 
     try:
         ids = await datastore.upsert([document])
