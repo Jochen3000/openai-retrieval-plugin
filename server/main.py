@@ -73,12 +73,24 @@ async def upsert_file(
 
     try:
         ids = await datastore.upsert([document])
-        await upsert_metadata(document, author, timestamp, source)  # Pass the additional values
+        await upsert_metadata(document, author, timestamp, source, source_id)  # Pass the additional values
         return UpsertResponse(ids=ids)
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail=f"str({e})")
 
+# upsert metadata to mongodb
+async def upsert_metadata(document, author, timestamp, source, source_id):  # Receive the additional values
+    metadata = {
+        "id": document.id,
+        "author": author,  # Add author to metadata
+        "timestamp": timestamp,  # Add timestamp to metadata
+        "source": source,  # Add source to metadata
+        "source_id": source_id,
+    }
+
+    result = metadata_collection.replace_one({"id": document.id}, metadata, upsert=True)
+    return result
 
 @app.post(
     "/upsert",
@@ -93,17 +105,6 @@ async def upsert(
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail="Internal Service Error")
-
-async def upsert_metadata(document, author, timestamp, source):  # Receive the additional values
-    metadata = {
-        "id": document.id,
-        "author": author,  # Add author to metadata
-        "timestamp": timestamp,  # Add timestamp to metadata
-        "source": source,  # Add source to metadata
-    }
-
-    result = metadata_collection.replace_one({"id": document.id}, metadata, upsert=True)
-    return result
 
 
 @app.post(
