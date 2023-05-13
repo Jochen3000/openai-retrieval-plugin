@@ -83,9 +83,9 @@ async def upsert_file(
 async def upsert_metadata(document, author, timestamp, source, source_id):  # Receive the additional values
     metadata = {
         "id": document.id,
-        "author": author,  # Add author to metadata
-        "timestamp": timestamp,  # Add timestamp to metadata
-        "source": source,  # Add source to metadata
+        "author": author,
+        "timestamp": timestamp,
+        "source": source,
         "source_id": source_id,
     }
 
