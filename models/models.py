@@ -8,6 +8,8 @@ class Source(str, Enum):
     file = "file"
     chat = "chat"
     userresearch_db = "userresearch_db"
+    doku = "doku"
+    userresearch = "userresearch"
 
 
 class DocumentMetadata(BaseModel):

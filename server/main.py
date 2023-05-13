@@ -23,9 +23,7 @@ from .prompt_router import prompt_router
 # Connect to mongodb
 connection_string = os.getenv('MONGO_DB_URL')
 db_client = MongoClient(connection_string, tlsCAFile=certifi.where())
-db = db_client['userresearch']
-vectorindex_collection = db['vectorindex']
-metadata_collection = db['metadata']
+db = db_client['podojo_metadata']
 
 app = FastAPI()
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
@@ -70,22 +68,22 @@ async def upsert_file(
     source_id: str = Form(None),  
 ):
     document = await get_document_from_file(file, document_id, source, author, source_id)
+    metadata_collection = db[source]
 
     try:
         ids = await datastore.upsert([document])
-        await upsert_metadata(document, author, timestamp, source, source_id)  # Pass the additional values
+        await upsert_metadata(metadata_collection, document, author, timestamp, source_id)
         return UpsertResponse(ids=ids)
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail=f"str({e})")
 
 # upsert metadata to mongodb
-async def upsert_metadata(document, author, timestamp, source, source_id):  # Receive the additional values
+async def upsert_metadata(metadata_collection, document, author, timestamp, source_id):  # Receive the additional values
     metadata = {
         "id": document.id,
         "author": author,
         "timestamp": timestamp,
-        "source": source,
         "source_id": source_id,
     }
 
@@ -163,9 +161,9 @@ async def delete(
 
         if request.ids:
             for document_id in request.ids:
-                await delete_metadata(document_id)
+                await delete_metadata(request.filter.source, document_id)
         elif request.filter and request.filter.document_id:
-            await delete_metadata(request.filter.document_id)
+            await delete_metadata(request.filter.source, request.filter.document_id)
 
         return DeleteResponse(success=success)
     except Exception as e:
@@ -173,8 +171,8 @@ async def delete(
         raise HTTPException(status_code=500, detail="Internal Service Error")
 
 
-
-async def delete_metadata(document_id: str):
+async def delete_metadata(source: str, document_id: str):
+    metadata_collection = db[source]
     result = metadata_collection.delete_one({"id": document_id})
     return result.deleted_count > 0
 
