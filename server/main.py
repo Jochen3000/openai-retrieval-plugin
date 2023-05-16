@@ -29,9 +29,12 @@ app = FastAPI()
 app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
 
 #cors
-cors_origins_str = os.getenv('CORS_ORIGINS')
+cors_origins_str1 = os.getenv('CORS_ORIGINS_1')
+cors_origins_str2 = os.getenv('CORS_ORIGINS_2')
+
 origins = [
-    cors_origins_str,  
+    cors_origins_str1,
+    cors_origins_str2,
 ]
 
 app.add_middleware(
