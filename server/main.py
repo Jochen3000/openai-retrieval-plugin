@@ -33,11 +33,7 @@ cors_origins_str1 = os.getenv('CORS_ORIGINS_1')
 cors_origins_str2 = os.getenv('CORS_ORIGINS_2')
 cors_origins_str3 = os.getenv('CORS_ORIGINS_3') 
 
-origins = [
-    cors_origins_str1,
-    cors_origins_str2,
-    cors_origins_str3, 
-]
+origins = [origin for origin in [cors_origins_str1, cors_origins_str2, cors_origins_str3] if origin]
 
 app.add_middleware(
     CORSMiddleware,
