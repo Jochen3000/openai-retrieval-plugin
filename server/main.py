@@ -31,10 +31,12 @@ app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
 #cors
 cors_origins_str1 = os.getenv('CORS_ORIGINS_1')
 cors_origins_str2 = os.getenv('CORS_ORIGINS_2')
+cors_origins_str3 = os.getenv('CORS_ORIGINS_3') 
 
 origins = [
     cors_origins_str1,
     cors_origins_str2,
+    cors_origins_str3, 
 ]
 
 app.add_middleware(
