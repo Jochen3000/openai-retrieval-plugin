@@ -67,25 +67,27 @@ async def upsert_file(
     timestamp: str = Form(None), 
     source: str = Form(None), 
     source_id: str = Form(None),  
+    groups: str = Form(None), 
 ):
     document = await get_document_from_file(file, document_id, source, author, source_id)
     metadata_collection = db[source]
 
     try:
         ids = await datastore.upsert([document])
-        await upsert_metadata(metadata_collection, document, author, timestamp, source_id)
+        await upsert_metadata(metadata_collection, document, author, timestamp, source_id, groups)
         return UpsertResponse(ids=ids)
     except Exception as e:
         print("Error:", e)
         raise HTTPException(status_code=500, detail=f"str({e})")
 
 # upsert metadata to mongodb
-async def upsert_metadata(metadata_collection, document, author, timestamp, source_id):  # Receive the additional values
+async def upsert_metadata(metadata_collection, document, author, timestamp, source_id, groups):  # Receive the additional values
     metadata = {
         "id": document.id,
         "author": author,
         "timestamp": timestamp,
         "source_id": source_id,
+        "groups": groups,
     }
 
     result = metadata_collection.replace_one({"id": document.id}, metadata, upsert=True)
