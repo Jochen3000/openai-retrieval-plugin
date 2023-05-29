@@ -25,7 +25,7 @@ pinecone_index = os.getenv("PINECONE_INDEX")
 
 class DataStore(ABC):
     async def upsert(
-        self, documents: List[Document], chunk_token_size: Optional[int] = None
+        self, documents: List[Document], chunk_token_size: Optional[int] = None, chunking_strategy: str = "tokens"
     ) -> List[str]:
         """
         Takes in a list of documents and inserts them into the database.
@@ -46,7 +46,7 @@ class DataStore(ABC):
             ]
         )
 
-        chunks = get_document_chunks(documents, chunk_token_size)
+        chunks = get_document_chunks(documents, chunk_token_size, chunking_strategy)
 
         return await self._upsert(chunks)
 

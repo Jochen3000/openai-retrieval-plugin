@@ -68,12 +68,13 @@ async def upsert_file(
     source: str = Form(None), 
     source_id: str = Form(None),  
     groups: str = Form(None), 
+    chunking_strategy: str = Form("tokens"), #lines for interviews, tokens otherwise
 ):
     document = await get_document_from_file(file, document_id, source, author, source_id)
     metadata_collection = db[source]
 
     try:
-        ids = await datastore.upsert([document])
+        ids = await datastore.upsert([document], chunking_strategy=chunking_strategy)  # pass the strategy to upsert
         await upsert_metadata(metadata_collection, document, author, timestamp, source_id, groups)
         return UpsertResponse(ids=ids)
     except Exception as e:

@@ -18,86 +18,68 @@ MIN_CHUNK_LENGTH_TO_EMBED = 5  # Discard chunks shorter than this
 EMBEDDINGS_BATCH_SIZE = 128  # The number of embeddings to request at a time
 MAX_NUM_CHUNKS = 10000  # The maximum number of chunks to generate from a text
 
+def get_text_chunks(text: str, chunk_token_size: Optional[int], chunking_strategy: str) -> List[str]:
+    if chunking_strategy == "lines":
+        """
+        Split a text into chunks by new line.
+        """
+        if not text or text.isspace():
+            return []
 
-def get_text_chunks(text: str, chunk_token_size: Optional[int]) -> List[str]:
-    """
-    Split a text into chunks of ~CHUNK_SIZE tokens, based on punctuation and newline boundaries.
+        chunks = text.split("\n")
+        chunks = [chunk.strip() for chunk in chunks if chunk and not chunk.isspace()]
 
-    Args:
-        text: The text to split into chunks.
-        chunk_token_size: The target size of each chunk in tokens, or None to use the default CHUNK_SIZE.
+        return chunks
+    elif chunking_strategy == "tokens":
+        """
+        Split a text into chunks of ~CHUNK_SIZE tokens, based on punctuation and newline boundaries.
+        """
+        if not text or text.isspace():
+            return []
 
-    Returns:
-        A list of text chunks, each of which is a string of ~CHUNK_SIZE tokens.
-    """
-    # Return an empty list if the text is empty or whitespace
-    if not text or text.isspace():
-        return []
+        tokens = tokenizer.encode(text, disallowed_special=())
+        chunks = []
+        chunk_size = chunk_token_size or CHUNK_SIZE
+        num_chunks = 0
 
-    # Tokenize the text
-    tokens = tokenizer.encode(text, disallowed_special=())
+        while tokens and num_chunks < MAX_NUM_CHUNKS:
+            chunk = tokens[:chunk_size]
+            chunk_text = tokenizer.decode(chunk)
 
-    # Initialize an empty list of chunks
-    chunks = []
+            if not chunk_text or chunk_text.isspace():
+                tokens = tokens[len(chunk) :]
+                continue
 
-    # Use the provided chunk token size or the default one
-    chunk_size = chunk_token_size or CHUNK_SIZE
+            last_punctuation = max(
+                chunk_text.rfind("."),
+                chunk_text.rfind("?"),
+                chunk_text.rfind("!"),
+                chunk_text.rfind("\n"),
+            )
 
-    # Initialize a counter for the number of chunks
-    num_chunks = 0
+            if last_punctuation != -1 and last_punctuation > MIN_CHUNK_SIZE_CHARS:
+                chunk_text = chunk_text[: last_punctuation + 1]
 
-    # Loop until all tokens are consumed
-    while tokens and num_chunks < MAX_NUM_CHUNKS:
-        # Take the first chunk_size tokens as a chunk
-        chunk = tokens[:chunk_size]
+            chunk_text_to_append = chunk_text.replace("\n", " ").strip()
 
-        # Decode the chunk into text
-        chunk_text = tokenizer.decode(chunk)
+            if len(chunk_text_to_append) > MIN_CHUNK_LENGTH_TO_EMBED:
+                chunks.append(chunk_text_to_append)
 
-        # Skip the chunk if it is empty or whitespace
-        if not chunk_text or chunk_text.isspace():
-            # Remove the tokens corresponding to the chunk text from the remaining tokens
-            tokens = tokens[len(chunk) :]
-            # Continue to the next iteration of the loop
-            continue
+            tokens = tokens[len(tokenizer.encode(chunk_text, disallowed_special=())) :]
+            num_chunks += 1
 
-        # Find the last period or punctuation mark in the chunk
-        last_punctuation = max(
-            chunk_text.rfind("."),
-            chunk_text.rfind("?"),
-            chunk_text.rfind("!"),
-            chunk_text.rfind("\n"),
-        )
+        if tokens:
+            remaining_text = tokenizer.decode(tokens).replace("\n", " ").strip()
+            if len(remaining_text) > MIN_CHUNK_LENGTH_TO_EMBED:
+                chunks.append(remaining_text)
 
-        # If there is a punctuation mark, and the last punctuation index is before MIN_CHUNK_SIZE_CHARS
-        if last_punctuation != -1 and last_punctuation > MIN_CHUNK_SIZE_CHARS:
-            # Truncate the chunk text at the punctuation mark
-            chunk_text = chunk_text[: last_punctuation + 1]
-
-        # Remove any newline characters and strip any leading or trailing whitespace
-        chunk_text_to_append = chunk_text.replace("\n", " ").strip()
-
-        if len(chunk_text_to_append) > MIN_CHUNK_LENGTH_TO_EMBED:
-            # Append the chunk text to the list of chunks
-            chunks.append(chunk_text_to_append)
-
-        # Remove the tokens corresponding to the chunk text from the remaining tokens
-        tokens = tokens[len(tokenizer.encode(chunk_text, disallowed_special=())) :]
-
-        # Increment the number of chunks
-        num_chunks += 1
-
-    # Handle the remaining tokens
-    if tokens:
-        remaining_text = tokenizer.decode(tokens).replace("\n", " ").strip()
-        if len(remaining_text) > MIN_CHUNK_LENGTH_TO_EMBED:
-            chunks.append(remaining_text)
-
-    return chunks
+        return chunks
+    else:
+        raise ValueError(f"Unknown chunking strategy: {chunking_strategy}")
 
 
 def create_document_chunks(
-    doc: Document, chunk_token_size: Optional[int]
+    doc: Document, chunk_token_size: Optional[int], chunking_strategy: str = "tokens"
 ) -> Tuple[List[DocumentChunk], str]:
     """
     Create a list of document chunks from a document object and return the document id.
@@ -118,7 +100,7 @@ def create_document_chunks(
     doc_id = doc.id or str(uuid.uuid4())
 
     # Split the document text into chunks
-    text_chunks = get_text_chunks(doc.text, chunk_token_size)
+    text_chunks = get_text_chunks(doc.text, chunk_token_size, chunking_strategy)
 
     metadata = (
         DocumentChunkMetadata(**doc.metadata.__dict__)
@@ -147,7 +129,7 @@ def create_document_chunks(
 
 
 def get_document_chunks(
-    documents: List[Document], chunk_token_size: Optional[int]
+    documents: List[Document], chunk_token_size: Optional[int], chunking_strategy: str = "tokens"
 ) -> Dict[str, List[DocumentChunk]]:
     """
     Convert a list of documents into a dictionary from document id to list of document chunks.
@@ -168,7 +150,7 @@ def get_document_chunks(
 
     # Loop over each document and create chunks
     for doc in documents:
-        doc_chunks, doc_id = create_document_chunks(doc, chunk_token_size)
+        doc_chunks, doc_id = create_document_chunks(doc, chunk_token_size, chunking_strategy)
 
         # Append the chunks for this document to the list of all chunks
         all_chunks.extend(doc_chunks)
