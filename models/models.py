@@ -10,6 +10,7 @@ class Source(str, Enum):
     userresearch_db = "userresearch_db"
     doku = "doku"
     userresearch = "userresearch"
+    test = "test"
 
 
 class DocumentMetadata(BaseModel):
